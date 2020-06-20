@@ -1,0 +1,4 @@
+
+*.pem
+docker/*
+.DS_Store
