@@ -9,9 +9,9 @@ use Aws\CloudFront\CloudFrontClient;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 
-class PlayVideoController extends Controller
+class MovieDetailController extends Controller
 {
-    public function show (Request $request)
+    public function index ()
     {
         $cloudFrontClient = new CloudFrontClient([
             'profile' => 'default',
@@ -43,16 +43,16 @@ class PlayVideoController extends Controller
         $domain = 'thejiroboy.com';
         $secure = true;
         $httponly = false;
-        $cookie_options = ['expires' => $limit  , 'path' => $path, 'httponly' => $httponly, 'domain' => $domain,'samesite' => 'None', 'secure' => $secure];
-        setcookie('CloudFront-Policy', $cookies['CloudFront-Policy'], $cookie_options);
-        setcookie('CloudFront-Signature', $cookies['CloudFront-Signature'], $cookie_options);
-        setcookie('CloudFront-Key-Pair-Id', $cookies['CloudFront-Key-Pair-Id'], $cookie_options);
+        $cookieOptions = ['expires' => $limit  , 'path' => $path, 'httponly' => $httponly, 'domain' => $domain,'samesite' => 'None', 'secure' => $secure];
+        setcookie('CloudFront-Policy', $cookies['CloudFront-Policy'], $cookieOptions);
+        setcookie('CloudFront-Signature', $cookies['CloudFront-Signature'], $cookieOptions);
+        setcookie('CloudFront-Key-Pair-Id', $cookies['CloudFront-Key-Pair-Id'], $cookieOptions);
         echo '<pre>';
             var_dump($cookies['CloudFront-Policy']);
             var_dump($cookies['CloudFront-Signature']);
             var_dump($cookies['CloudFront-Key-Pair-Id']);
         echo '</pre>';
-        return view('play_video');
+        return view('movie_detail');
        }
        public function signCookiePolicy($cloudFrontClient, $customPolicy,
            $privateKey, $keyPairId)

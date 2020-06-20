@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
-Route::get('/play_video', 'PlayVideoController@show');
+Route::get('/', 'TopPageController@index');
+Route::get('/movie_detail', 'MovieDetailController@index');
