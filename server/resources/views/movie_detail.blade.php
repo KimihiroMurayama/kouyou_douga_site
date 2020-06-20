@@ -12,7 +12,7 @@
     $(document).ready(function() {
         var player = videojs('video');
         player.src({
-            src: 'https://thejiroboy.com/sample_movie_hts.m3u8',
+            src: "{{$movie_url}}",
             type: 'application/x-mpegURL',
             withCredentials: true
         });
