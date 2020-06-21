@@ -13,11 +13,17 @@ use Illuminate\Http\Request;
 use Aws\CloudFront\CloudFrontClient;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
+use \SplFileObject;
 
 class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
+
     function __construct() {
+        #これより前にプリントdebugを仕込むとcookieエラーなる
+        $this->set_cloudfront_cookie();
+    }
+    private function set_cloudfront_cookie(){
         $cloudFrontClient = new CloudFrontClient([
             'profile' => 'default',
             'version' => '2014-11-06',
@@ -52,12 +58,6 @@ class Controller extends BaseController
         setcookie('CloudFront-Policy', $cookies['CloudFront-Policy'], $cookieOptions);
         setcookie('CloudFront-Signature', $cookies['CloudFront-Signature'], $cookieOptions);
         setcookie('CloudFront-Key-Pair-Id', $cookies['CloudFront-Key-Pair-Id'], $cookieOptions);
-        echo '<pre>';
-            var_dump($cookies['CloudFront-Policy']);
-            var_dump($cookies['CloudFront-Signature']);
-            var_dump($cookies['CloudFront-Key-Pair-Id']);
-        echo '</pre>';
-        return view('movie_detail');
     }
     private function signCookiePolicy($cloudFrontClient, $customPolicy,
         $privateKey, $keyPairId)
@@ -74,5 +74,15 @@ class Controller extends BaseController
         } catch (AwsException $e) {
             return [ 'Error' => $e->getAwsErrorMessage() ];
         }
+    }
+    private function getAllMovieData(){
+        $filePath = storage_path() . '/app/movie_list.csv';
+        $file = new SplFileObject($filePath);
+        $file->setFlags(SplFileObject::READ_CSV);
+        $csv = [];
+        foreach($file as $index => $line) {
+            $csv[$index] = $line;
+        }
+        return $csv;
     }
 }
