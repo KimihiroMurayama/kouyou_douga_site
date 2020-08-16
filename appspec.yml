@@ -3,5 +3,5 @@ version: 0.0
 os: linux
 files:
 # パスはappspec.ymlがある場所がルート & カレント ディレクトリになる
-- source: /server
-destination: /home/website/src/
+- source: /
+  destination: /home/website/src/
