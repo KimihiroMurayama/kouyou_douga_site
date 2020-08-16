@@ -1,5 +1,7 @@
+# 必須
 version: 0.0
 os: linux
 files:
+# パスはappspec.ymlがある場所がルート & カレント ディレクトリになる
 - source: /
-destination: /home/ec2-user/laraveltest/
+destination: /home/website/src/
