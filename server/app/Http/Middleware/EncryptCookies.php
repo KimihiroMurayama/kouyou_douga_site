@@ -12,6 +12,8 @@ class EncryptCookies extends Middleware
      * @var array
      */
     protected $except = [
-        //
+        'CloudFront-Policy',
+        'CloudFront-Signature',
+        'CloudFront-Key-Pair-Id'
     ];
 }
