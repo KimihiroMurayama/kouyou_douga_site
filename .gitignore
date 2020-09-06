@@ -1,5 +1,5 @@
 
 *.pem
 .DS_Store
-docker/db/data/*
-docker/sql/*
+./docker/db/data/*
+./docker/sql/*
