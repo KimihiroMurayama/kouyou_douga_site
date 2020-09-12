@@ -8,6 +8,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Concerns\BuildsQueries;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Grammars\Grammar;
 use Illuminate\Database\Query\Processors\Processor;
 use Illuminate\Pagination\Paginator;
@@ -337,7 +338,9 @@ class Builder
      */
     protected function parseSub($query)
     {
-        if ($query instanceof self || $query instanceof EloquentBuilder) {
+        if ($query instanceof self || $query instanceof EloquentBuilder || $query instanceof Relation) {
+            $query = $this->prependDatabaseNameIfCrossDatabaseQuery($query);
+
             return [$query->toSql(), $query->getBindings()];
         } elseif (is_string($query)) {
             return [$query, []];
@@ -346,6 +349,26 @@ class Builder
                 'A subquery must be a query builder instance, a Closure, or a string.'
             );
         }
+    }
+
+    /**
+     * Prepend the database name if the given query is on another database.
+     *
+     * @param  mixed  $query
+     * @return mixed
+     */
+    protected function prependDatabaseNameIfCrossDatabaseQuery($query)
+    {
+        if ($query->getConnection()->getDatabaseName() !==
+            $this->getConnection()->getDatabaseName()) {
+            $databaseName = $query->getConnection()->getDatabaseName();
+
+            if (strpos($query->from, $databaseName) !== 0 && strpos($query->from, '.') === false) {
+                $query->from($databaseName.'.'.$query->from);
+            }
+        }
+
+        return $query;
     }
 
     /**
@@ -1083,6 +1106,24 @@ class Builder
     }
 
     /**
+     * Add a where between statement using columns to the query.
+     *
+     * @param  string  $column
+     * @param  array  $values
+     * @param  string  $boolean
+     * @param  bool  $not
+     * @return $this
+     */
+    public function whereBetweenColumns($column, array $values, $boolean = 'and', $not = false)
+    {
+        $type = 'betweenColumns';
+
+        $this->wheres[] = compact('type', 'column', 'values', 'boolean', 'not');
+
+        return $this;
+    }
+
+    /**
      * Add an or where between statement to the query.
      *
      * @param  string  $column
@@ -1092,6 +1133,18 @@ class Builder
     public function orWhereBetween($column, array $values)
     {
         return $this->whereBetween($column, $values, 'or');
+    }
+
+    /**
+     * Add an or where between statement using columns to the query.
+     *
+     * @param  string  $column
+     * @param  array  $values
+     * @return $this
+     */
+    public function orWhereBetweenColumns($column, array $values)
+    {
+        return $this->whereBetweenColumns($column, $values, 'or');
     }
 
     /**
@@ -1108,6 +1161,19 @@ class Builder
     }
 
     /**
+     * Add a where not between statement using columns to the query.
+     *
+     * @param  string  $column
+     * @param  array  $values
+     * @param  string  $boolean
+     * @return $this
+     */
+    public function whereNotBetweenColumns($column, array $values, $boolean = 'and')
+    {
+        return $this->whereBetweenColumns($column, $values, $boolean, true);
+    }
+
+    /**
      * Add an or where not between statement to the query.
      *
      * @param  string  $column
@@ -1117,6 +1183,18 @@ class Builder
     public function orWhereNotBetween($column, array $values)
     {
         return $this->whereNotBetween($column, $values, 'or');
+    }
+
+    /**
+     * Add an or where not between statement using columns to the query.
+     *
+     * @param  string  $column
+     * @param  array  $values
+     * @return $this
+     */
+    public function orWhereNotBetweenColumns($column, array $values)
+    {
+        return $this->whereNotBetweenColumns($column, $values, 'or');
     }
 
     /**
@@ -1381,7 +1459,7 @@ class Builder
     /**
      * Add another query builder as a nested where to the query builder.
      *
-     * @param  $this  $query
+     * @param  \Illuminate\Database\Query\Builder  $query
      * @param  string  $boolean
      * @return $this
      */
@@ -1526,7 +1604,7 @@ class Builder
     }
 
     /**
-     * Adds a or where condition using row values.
+     * Adds an or where condition using row values.
      *
      * @param  array  $columns
      * @param  string  $operator
@@ -1561,7 +1639,7 @@ class Builder
     }
 
     /**
-     * Add a "or where JSON contains" clause to the query.
+     * Add an "or where JSON contains" clause to the query.
      *
      * @param  string  $column
      * @param  mixed  $value
@@ -1586,7 +1664,7 @@ class Builder
     }
 
     /**
-     * Add a "or where JSON not contains" clause to the query.
+     * Add an "or where JSON not contains" clause to the query.
      *
      * @param  string  $column
      * @param  mixed  $value
@@ -1624,7 +1702,7 @@ class Builder
     }
 
     /**
-     * Add a "or where JSON length" clause to the query.
+     * Add an "or where JSON length" clause to the query.
      *
      * @param  string  $column
      * @param  mixed  $operator
@@ -1773,7 +1851,7 @@ class Builder
     }
 
     /**
-     * Add a "or having" clause to the query.
+     * Add an "or having" clause to the query.
      *
      * @param  string  $column
      * @param  string|null  $operator
@@ -2044,6 +2122,8 @@ class Builder
     /**
      * Remove all existing orders and optionally add a new order.
      *
+     * @param  string|null  $column
+     * @param  string  $direction
      * @return $this
      */
     public function reorder($column = null, $direction = 'asc')
@@ -3017,7 +3097,7 @@ class Builder
      * @param  array  $bindings
      * @return array
      */
-    protected function cleanBindings(array $bindings)
+    public function cleanBindings(array $bindings)
     {
         return array_values(array_filter($bindings, function ($binding) {
             return ! $binding instanceof Expression;
@@ -3086,6 +3166,7 @@ class Builder
     {
         return $value instanceof self ||
                $value instanceof EloquentBuilder ||
+               $value instanceof Relation ||
                $value instanceof Closure;
     }
 
